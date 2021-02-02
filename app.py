@@ -1,10 +1,10 @@
 import os
 
-from flask import Flask, render_template, request, flash, redirect, session, g
+from flask import Flask, render_template, request, flash, redirect, session, g, abort
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
-from forms import UserAddForm, LoginForm, MessageForm
+from forms import UserAddForm, LoginForm, MessageForm, UserEditForm
 from models import db, connect_db, User, Message
 
 CURR_USER_KEY = "curr_user"
@@ -114,6 +114,9 @@ def logout():
     """Handle logout of user."""
 
     # IMPLEMENT THIS
+    do_logout()
+    flash('Successfully Logged Out')
+    return redirect('/login')
 
 
 ##############################################################################
@@ -212,6 +215,30 @@ def profile():
     """Update profile for current user."""
 
     # IMPLEMENT THIS
+    if not g.user:
+
+        flash('Access unauthorized.', 'danger')
+        return redirect('/')
+
+    else:
+
+        user = User.query.get_or_404(session[CURR_USER_KEY])
+        form = UserEditForm(obj=user)
+
+        if form.validate_on_submit():
+
+            if User.authenticate(user.username, form.password.data):
+
+                User.update(user, form)
+
+                return redirect(f'/users/{user.id}')
+
+            else:
+
+                form.password.errors = ['Incorrect Password']
+                return render_template('users/edit.html', form=form)
+
+        return render_template('users/edit.html', form=form)
 
 
 @app.route('/users/delete', methods=["POST"])
@@ -279,6 +306,34 @@ def messages_destroy(message_id):
     return redirect(f"/users/{g.user.id}")
 
 
+@app.route('/messages/<int:message_id>/like', methods=["POST"])
+def messages_like(message_id):
+    """Toggles message likes"""
+
+    if not g.user:
+
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    msg = Message.query.get(message_id)
+
+    if msg.user_id == g.user.id:
+
+        return abort(403)
+
+    if msg in g.user.likes:
+
+        g.user.likes.remove(msg)
+
+    else:
+
+        g.user.likes.append(msg)
+
+    db.session.commit()
+
+    return redirect('/')
+
+
 ##############################################################################
 # Homepage and error pages
 
@@ -292,8 +347,12 @@ def homepage():
     """
 
     if g.user:
+        ids_following = [
+            following.id for following in g.user.following] + [g.user.id]
+
         messages = (Message
                     .query
+                    .filter(Message.user_id.in_(ids_following))
                     .order_by(Message.timestamp.desc())
                     .limit(100)
                     .all())

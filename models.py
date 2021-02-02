@@ -80,7 +80,7 @@ class User(db.Model):
         db.Text,)
 
     location = db.Column(
-        db.Text,)
+        db.Text)
 
     password = db.Column(
         db.Text,
@@ -120,6 +120,16 @@ class User(db.Model):
         found_user_list = [
             user for user in self.following if user == other_user]
         return len(found_user_list) == 1
+
+    @classmethod
+    def update(cls, user, form):
+        user.username = form.username.data or user.username
+        user.email = form.email.data or user.email
+        user.image_url = form.image_url.data or user.email
+        user.header_image_url = form.header_image_url.data or user.header_image_url
+        user.bio = form.bio.data or user.bio
+        db.session.add(user)
+        db.session.commit()
 
     @classmethod
     def signup(cls, username, email, password, image_url):
