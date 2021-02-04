@@ -190,6 +190,7 @@ nav + .container {
 .message-area,
 .timeline-image {
   display: inline-block;
+  position: relative;
 }
 
 .message-area {
@@ -256,7 +257,7 @@ nav + .container {
 }
 
 #messages {
-  position: relative;
+  position: absolute;
 }
 
 #messages .message-link {
@@ -265,7 +266,7 @@ nav + .container {
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 1;
+  z-index: 2;
 }
 
 #messages .list-group-item a:not(.message-link) {
@@ -508,7 +509,7 @@ p.card-bio {
   min-width: 105px;
 }
 
-#messages-form {
+.messages-form {
   position: absolute;
   top: 4px;
   right: 4px;

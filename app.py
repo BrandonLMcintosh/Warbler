@@ -153,7 +153,9 @@ def users_show(user_id):
                 .order_by(Message.timestamp.desc())
                 .limit(100)
                 .all())
-    return render_template('users/show.html', user=user, messages=messages)
+
+    likes = [message.id for message in g.user.likes]
+    return render_template('users/show.html', user=user, messages=messages, likes=likes)
 
 
 @app.route('/users/<int:user_id>/following')
@@ -189,7 +191,9 @@ def user_likes(user_id):
         return redirect("/")
 
     user = User.query.get_or_404(user_id)
-    return render_template('users/likes.html', user=user)
+    likes = [message.id for message in g.user.likes]
+
+    return render_template('users/likes.html', user=user, messages=user.likes, likes=likes)
 
 
 @app.route('/users/follow/<int:follow_id>', methods=['POST'])
@@ -325,7 +329,7 @@ def messages_like(message_id):
     if not g.user:
 
         flash("Access unauthorized.", "danger")
-        return redirect("/")
+        return redirect(request.referrer)
 
     msg = Message.query.get(message_id)
 
@@ -368,8 +372,8 @@ def homepage():
                     .order_by(Message.timestamp.desc())
                     .limit(100)
                     .all())
-
-        return render_template('home.html', messages=messages)
+        likes = [message.id for message in g.user.likes]
+        return render_template('home.html', messages=messages, likes=likes)
 
     else:
         return render_template('home-anon.html')
