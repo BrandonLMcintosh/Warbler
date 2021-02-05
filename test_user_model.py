@@ -39,20 +39,99 @@ class UserModelTestCase(TestCase):
         Message.query.delete()
         Follows.query.delete()
 
+        user = User(
+            email="test@test.test",
+            username="testuser",
+            password="TESTPASSWORD"
+        )
+
+        db.session.add(user)
+        db.session.commit()
+
+        self.user = User.query.filter_by(username="testuser").first()
+
         self.client = app.test_client()
 
     def test_user_model(self):
         """Does basic model work?"""
 
-        u = User(
-            email="test@test.com",
-            username="testuser",
-            password="HASHED_PASSWORD"
-        )
+        self.assertEqual(len(self.user.messages), 0)
+        self.assertEqual(len(self.user.followers), 0)
+        self.assertEqual(len(self.user.following), 0)
 
-        db.session.add(u)
+    def test_user_repr(self):
+        """Does the repr method word as expected?"""
+
+        self.assertEqual(repr(
+            self.user),
+            f"<User #{self.user.id}: {self.user.username}, {self.user.email}>")
+
+    def test_user_is_following(self):
+        # when followed, does it show that user is following user2
+        user2 = User(
+            email="test2@test.test",
+            username="testuser2",
+            password="TESTPASSWORD2")
+
+        db.session.add(user2)
         db.session.commit()
 
-        # User should have no messages & no followers
-        self.assertEqual(len(u.messages), 0)
-        self.assertEqual(len(u.followers), 0)
+        user2 = User.query.filter_by(username="testuser2").first()
+
+        self.user.following.append(user2)
+        self.assertTrue(self.user.is_following(user2))
+
+        # after un-following, does it show that user is not following user2
+        self.user.following.remove(user2)
+        self.assertFalse(self.user.is_following(user2))
+
+    def test_user_is_followed_by(self):
+
+        user2 = User(
+            email="test2@test.test",
+            username="testuser2",
+            password="TESTPASSOWRD2"
+        )
+
+        db.session.add(user2)
+        db.session.commit()
+
+        user2 = User.query.filter_by(username="testuser2").first()
+
+        user2.following.append(self.user)
+        db.session.add(user2)
+        db.session.commit()
+        self.assertTrue(self.user.is_followed_by(user2))
+
+        user2.following.remove(self.user)
+        db.session.add(user2)
+        db.session.commit()
+        self.assertFalse(self.user.is_followed_by(user2))
+
+    def test_user_created(self):
+        # test with bad email
+        user2 = User(
+            email="test",
+            username="test",
+            password="test"
+        )
+        db.session.add(user2)
+        db.session.commit()
+        user2 = User.query.filter_by(username="test").first()
+
+        self.assertNotEqual(type(user2),  User)
+
+    def test_user_authenticated(self):
+
+        self.assertFalse(User.authenticate(
+            self.user.username, "BADPASSWORD"))
+
+        self.assertTrue(User.authenticate(self.user.username, "TESTPASSWORD"))
+
+        self.assertEqual(
+            type(User.authenticate(
+                'testuser',
+                'TESTPASSWORD'),
+                User))
+
+    def test_user_bad_password_signup(self):
