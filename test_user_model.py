@@ -39,7 +39,7 @@ class UserModelTestCase(TestCase):
         Message.query.delete()
         Follows.query.delete()
 
-        user = User(
+        user = User.signup(
             email="test@test.test",
             username="testuser",
             password="TESTPASSWORD"
@@ -108,30 +108,18 @@ class UserModelTestCase(TestCase):
         db.session.commit()
         self.assertFalse(self.user.is_followed_by(user2))
 
-    def test_user_created(self):
-        # test with bad email
-        user2 = User(
-            email="test",
-            username="test",
-            password="test"
-        )
-        db.session.add(user2)
-        db.session.commit()
-        user2 = User.query.filter_by(username="test").first()
-
-        self.assertNotEqual(type(user2),  User)
-
     def test_user_authenticated(self):
+
+        self.assertTrue(User.authenticate(self.user.username, "TESTPASSWORD"))
 
         self.assertFalse(User.authenticate(
             self.user.username, "BADPASSWORD"))
 
-        self.assertTrue(User.authenticate(self.user.username, "TESTPASSWORD"))
+        authentication_return = User.authenticate('testuser', 'TESTPASSWORD')
 
         self.assertEqual(
-            type(User.authenticate(
-                'testuser',
-                'TESTPASSWORD'),
-                User))
+            type(authentication_return),
+                User)
 
     def test_user_bad_password_signup(self):
+        pass

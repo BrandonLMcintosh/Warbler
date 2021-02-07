@@ -132,7 +132,7 @@ class User(db.Model):
         db.session.commit()
 
     @classmethod
-    def signup(cls, username, email, password, image_url):
+    def signup(cls, username, email, password, image_url=None):
         """Sign up user.
 
         Hashes password and adds user to system.
@@ -163,7 +163,7 @@ class User(db.Model):
         user = cls.query.filter_by(username=username).first()
 
         if user:
-            is_auth = bcrypt.check_password_hash(user.password, password)
+            is_auth = bcrypt.check_password_hash(user.password, password.encode('utf-8'))
             if is_auth:
                 return user
 
@@ -174,6 +174,9 @@ class Message(db.Model):
     """An individual message ("warble")."""
 
     __tablename__ = 'messages'
+
+    def __repr__(self):
+        return f'{self.text}'
 
     id = db.Column(
         db.Integer,
